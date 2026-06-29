@@ -5,6 +5,24 @@ set -ouex pipefail
 ## DNF5 Speedup
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
+# Fix per RPM che installano dentro /opt su immagini Atomic/bootc
+mkdir -p /var/opt
+
+if [ ! -e /opt ]; then
+    ln -s /var/opt /opt
+elif [ -L /opt ]; then
+    opt_target="$(readlink /opt)"
+
+    case "$opt_target" in
+        /*)
+            mkdir -p "$opt_target"
+            ;;
+        *)
+            mkdir -p "/$opt_target"
+            ;;
+    esac
+fi
+
 ## Install Helium Browser
 sudo curl --output-dir "/etc/yum.repos.d/" \
   --remote-name "https://copr.fedorainfracloud.org/coprs/imput/helium/repo/fedora-$(rpm -E %fedora)/imput-helium-fedora-$(rpm -E %fedora).repo"
