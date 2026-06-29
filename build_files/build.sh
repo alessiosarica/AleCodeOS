@@ -5,6 +5,11 @@ set -ouex pipefail
 ## DNF5 Speedup
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
+## Install Helium Browser
+sudo curl --output-dir "/etc/yum.repos.d/" \
+  --remote-name "https://copr.fedorainfracloud.org/coprs/imput/helium/repo/fedora-$(rpm -E %fedora)/imput-helium-fedora-$(rpm -E %fedora).repo"
+dnf -y install helium-bin
+
 ## System apps
 dnf -y install libvirt virt-manager qemu-kvm flatpak-builder lxpolkit lxqt-openssh-askpass just
 
