@@ -57,6 +57,15 @@ dnf -y remove waybar
 # this is needed for some glib applications
 glib-compile-schemas /usr/share/glib-2.0/schemas/
 
+# Remove Terra repos from final image.
+# They come from the base image and break bootc-image-builder anaconda-iso
+# when gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-terra43 is used.
+rm -f /etc/yum.repos.d/terra*.repo
+rm -f /usr/etc/yum.repos.d/terra*.repo
+
+# Optional: remove Terra GPG keys too
+rm -f /etc/pki/rpm-gpg/RPM-GPG-KEY-terra*
+
 ## CLEAN UP
 # Clean up dnf cache to reduce image size
 dnf5 -y clean all
