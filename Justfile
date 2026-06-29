@@ -93,7 +93,7 @@ sudoif command *args:
 #
 
 # Build the image using the specified parameters
-build $target_image=image_name $tag=default_tag $platforms="linux/amd64":
+build $target_image=image_name $tag=default_tag $platforms="":
     #!/usr/bin/env bash
 
     set -euox pipefail
@@ -121,15 +121,41 @@ build $target_image=image_name $tag=default_tag $platforms="linux/amd64":
     LABELS+=("--label" "org.opencontainers.image.title={{ image_name }}")
     LABELS+=("--label" "org.opencontainers.image.vendor={{ repo_organization }}")
 
-    MANIFEST="${target_image}:${tag}"
+    IMAGE="${target_image}:${tag}"
+    PODMAN_BUILD_ARGS=(
+        "${BUILD_ARGS[@]}"
+        "${LABELS[@]}"
+        --pull=newer
+        --file Containerfile
+    )
 
-    # Evita di riutilizzare una manifest vecchia con architetture stale.
-    podman manifest rm "${MANIFEST}" || true
+    if [[ -z "${platforms}" ]]; then
+        echo "Building single-arch image with --tag: ${IMAGE}"
 
-    # This actually builds the image!
-    PODMAN_BUILD_ARGS=("${BUILD_ARGS[@]}" "${LABELS[@]}" --pull=newer --platform "${platforms}" --manifest "${MANIFEST}" --file Containerfile)
+        # Rimuove eventuale manifest locale vecchia con lo stesso nome.
+        podman manifest rm "${IMAGE}" || true
 
-    podman build "${PODMAN_BUILD_ARGS[@]}" .
+        # Rimuove eventuale immagine locale stale/corrotta.
+        podman image rm -f "${IMAGE}" || true
+
+        podman build \
+            "${PODMAN_BUILD_ARGS[@]}" \
+            --platform "linux/amd64" \
+            --tag "${IMAGE}" \
+            .
+    else
+        echo "Building multi-arch manifest with --manifest: ${IMAGE}"
+        echo "Platforms: ${platforms}"
+
+        # Rimuove eventuale manifest locale vecchia.
+        podman manifest rm "${IMAGE}" || true
+
+        podman build \
+            "${PODMAN_BUILD_ARGS[@]}" \
+            --platform "${platforms}" \
+            --manifest "${IMAGE}" \
+            .
+    fi
 
 # Split the image for smaller updates (New)!
 rechunk $target_image=image_name $tag=default_tag:
