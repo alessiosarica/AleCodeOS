@@ -23,16 +23,40 @@ elif [ -L /opt ]; then
     esac
 fi
 
+cp -avf "/ctx/system_files"/. /
+
+## Install Cosign
+LATEST_VERSION=$(curl https://api.github.com/repos/sigstore/cosign/releases/latest | grep tag_name | cut -d : -f2 | tr -d "v\", ")
+curl -O -L "https://github.com/sigstore/cosign/releases/latest/download/cosign-${LATEST_VERSION}-1.x86_64.rpm"
+rpm -ivh cosign-${LATEST_VERSION}-1.x86_64.rpm
+
+
 ## Install Helium Browser
 sudo curl --output-dir "/etc/yum.repos.d/" \
   --remote-name "https://copr.fedorainfracloud.org/coprs/imput/helium/repo/fedora-$(rpm -E %fedora)/imput-helium-fedora-$(rpm -E %fedora).repo"
 dnf -y install helium-bin
 
+# 1Password repository
+rpm --import https://downloads.1password.com/linux/keys/1password.asc
+
+cat > /etc/yum.repos.d/1password.repo << EOF
+[1password]
+name=1Password Stable Channel
+baseurl=https://downloads.1password.com/linux/rpm/stable/$basearch
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://downloads.1password.com/linux/keys/1password.asc
+EOF
+
 ## System apps
-dnf -y install libvirt virt-manager qemu-kvm flatpak-builder lxpolkit lxqt-openssh-askpass just
+dnf -y install libvirt virt-manager qemu-kvm flatpak-builder lxpolkit lxqt-openssh-askpass just power-profiles-daemon cups-pk-helper kf5-kimageformats zsh git curl zoxide fzf nvim micro
+
+# Imposta zsh come shell predefinita per i nuovi utenti creati dopo l'installazione
+sed -i 's|^SHELL=.*|SHELL=/usr/bin/zsh|' /etc/default/useradd
 
 # User apps
-dnf -y install nautilus gnome-terminal gnome-system-monitor gnome-calculator loupe
+dnf -y install nautilus gnome-terminal gnome-system-monitor gnome-calculator loupe 1password 1password-cli
 
 # OBS and fully-featured ffmpeg with nonfree components from rpm fusion
 dnf -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
@@ -68,8 +92,11 @@ systemctl enable --force greetd.service
 
 mkdir -p /etc/skel/.config/systemd/user/graphical-session.target.wants
 ln -s /usr/lib/systemd/user/dms.service /etc/skel/.config/systemd/user/graphical-session.target.wants/
-mkdir -p /etc/skel/.config/niri/
-cp -rf /ctx/dot_config/niri/config.kdl /etc/skel/.config/niri/
+#mkdir -p /etc/skel/.config/niri/
+#cp -rf /ctx/dot_config/niri/config.kdl /etc/skel/.config/niri/
+
+## Copy Skel home to /etc/skel for new users
+cp -a /ctx/skel/. /etc/skel/
 
 #### Enable podman
 systemctl enable podman.socket

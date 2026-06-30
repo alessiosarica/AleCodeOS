@@ -1,7 +1,7 @@
 [customizations.installer.kickstart]
 contents = """
 %post
-bootc switch --mutate-in-place --transport registry ghcr.io/alessiosarica/AleCodeOS:latest
+bootc switch --mutate-in-place --transport registry ghcr.io/alessiosarica/alecodeos:latest
 %end
 """
 
