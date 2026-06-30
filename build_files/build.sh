@@ -39,7 +39,7 @@ dnf -y install helium-bin
 # 1Password repository
 rpm --import https://downloads.1password.com/linux/keys/1password.asc
 
-cat > /etc/yum.repos.d/1password.repo << EOF
+cat > /etc/yum.repos.d/1password.repo << 'EOF'
 [1password]
 name=1Password Stable Channel
 baseurl=https://downloads.1password.com/linux/rpm/stable/$basearch
